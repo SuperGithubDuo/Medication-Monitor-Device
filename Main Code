@@ -1,0 +1,67 @@
+from inference_sdk import InferenceHTTPClient
+import json
+import string
+# Initialize the client
+CLIENT = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com",
+    api_key="R0XDJGaPuMavciIFHhBx"
+)
+
+# Input image and model
+image_path = "TTest.jpg"
+model_id = "medication-monitor-device/2"
+
+# Perform inference
+result = CLIENT.infer(image_path, model_id=model_id)
+
+# Extract predictions
+predictions = result.get("predictions", [])
+
+# Define regions using corners
+regions = {
+    "region1": {"topleft": (0, 0), "bottomright": (600, 800)},
+    "region2": {"topleft": (600, 0), "bottomright": (1200, 800)},
+    "region3": {"topleft": (0, 800), "bottomright": (600, 1600)},
+    "region4": {"topleft": (600, 800), "bottomright": (1200, 1600)},
+}
+
+# Function to check if x, y is in a region
+def is_in_region(x, y, region_corners):
+    x_min, y_min = region_corners["topleft"]
+    x_max, y_max = region_corners["bottomright"]
+    return x_min <= x <= x_max and y_min <= y <= y_max
+
+# Save predictions to variables
+variables = {}
+for idx, prediction in enumerate(predictions):
+    if idx < len(string.ascii_lowercase):  # Handle up to 26 predictions
+        var_name = string.ascii_lowercase[idx]
+        variables[var_name] = prediction
+        x = prediction["x"]
+        y = prediction["y"]
+        class_name = prediction["class"]
+        confidence =str(round((prediction["confidence"])*100,2)) + "%"
+
+        # Check which region the prediction belongs to
+        matched = False
+        for region_name, corners in regions.items():
+            if is_in_region(x, y, corners):
+                matched = True
+                if region_name == "region1":
+                    print(f"Prediction '{var_name}' is in Monday container, and is '{class_name}'. It's confidence is '{confidence}'.")
+                elif region_name == "region2":
+                    print(f"Prediction '{var_name}' is in Tuesday container, and is '{class_name}'. It's confidence is '{confidence}'.")
+                elif region_name == "region3":
+                    print(f"Prediction '{var_name}' is in Wednesday container, and is '{class_name}'. It's confidence is '{confidence}'.")
+                elif region_name == "region4":
+                    print(f"Prediction '{var_name}' is in Thursday container, and is '{class_name}'. It's confidence is '{confidence}'.")
+                break
+
+        # If no region matched
+        if not matched:
+            print(f"Prediction '{var_name}' is not in any defined region.")
+
+# Save predictions to JSON file
+with open("dynamic_predictions.json", "w") as json_file:
+    json.dump(variables, json_file, indent=4)
+

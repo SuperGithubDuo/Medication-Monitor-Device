@@ -1,6 +1,4 @@
-# Medication-Monitor-Device
-# TestCommit
-Test Commit
+## Medication-Monitor-Device
 Here is a website explaining our process: [mmdwebsites][mmdwebsite]
 
 
